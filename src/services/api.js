@@ -2,6 +2,7 @@ import axios from 'axios';
 
 // 1. Fix the base URL - remove '/api' from the end
 const API_URL = import.meta.env.VITE_API_URL || 'https://cyan-industrious-fox.glitch.me';
+console.log("API URL =>", API_URL);
 
 // Create axios instance
 const api = axios.create({
