@@ -24,6 +24,22 @@ const PredictionForm = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Helper function untuk validasi UUID
+  const isValidUUID = (id) => {
+    if (!id || typeof id !== 'string') return false;
+    
+    // UUID v4 format: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id.trim());
+  };
+
+  const validateStudentId = (id) => {
+    if (!isValidUUID(id)) {
+      throw new Error(`ID siswa tidak valid atau format UUID salah: ${id}`);
+    }
+    return id.trim();
+  };
+
   const validationSchema = Yup.object({
     hoursStudied: Yup.number()
       .min(0, 'Jam belajar tidak boleh negatif')
@@ -88,10 +104,8 @@ const PredictionForm = () => {
         setSubmitting(true);
         setError(null);
 
-        // Validasi studentId
-        if (!studentId || isNaN(parseInt(studentId))) {
-          throw new Error(`Invalid student ID: ${studentId}`);
-        }
+        // Validasi studentId UUID
+        const validatedStudentId = validateStudentId(studentId);
 
         // Format data sesuai dengan yang diharapkan backend (camelCase)
         const predictionData = {
@@ -112,22 +126,27 @@ const PredictionForm = () => {
 
         // Debug logging
         console.log('🔍 Form values original:', values);
-        console.log('🔍 StudentId from params:', { studentId, type: typeof studentId, parsed: parseInt(studentId) });
+        console.log('🔍 StudentId from params:', { 
+          studentId, 
+          type: typeof studentId, 
+          isValidUUID: isValidUUID(studentId),
+          validated: validatedStudentId 
+        });
         console.log('🔍 Formatted prediction data (camelCase):', predictionData);
 
         // Log final data yang akan dikirim
         console.log('📤 Final data to send:', JSON.stringify(predictionData, null, 2));
 
         // Kirim request
-        console.log('📡 Sending request to:', `/api/predictions/student/${studentId}`);
-        const response = await predictionService.createPrediction(studentId, predictionData);
+        console.log('📡 Sending request to:', `/api/predictions/student/${validatedStudentId}`);
+        const response = await predictionService.createPrediction(validatedStudentId, predictionData);
         
         console.log('✅ Response received:', response);
         
         setSuccess('Prediksi berhasil dibuat! Anda akan diarahkan ke halaman detail siswa.');
         
         setTimeout(() => {
-          navigate(`/students/${studentId}`);
+          navigate(`/students/${validatedStudentId}`);
         }, 2000);
         
       } catch (err) {
@@ -205,12 +224,11 @@ const PredictionForm = () => {
         setLoading(true);
         setError(null);
         
-        if (!studentId || isNaN(parseInt(studentId))) {
-          throw new Error('ID siswa tidak valid');
-        }
+        // Validasi UUID studentId
+        const validatedStudentId = validateStudentId(studentId);
         
-        console.log('🔍 Fetching student with ID:', studentId);
-        const response = await studentService.getStudentById(studentId);
+        console.log('🔍 Fetching student with UUID:', validatedStudentId);
+        const response = await studentService.getStudentById(validatedStudentId);
         console.log('✅ Student data received:', response.data);
         
         setStudent(response.data.data || response.data);
@@ -226,7 +244,7 @@ const PredictionForm = () => {
     if (studentId) {
       fetchStudent();
     } else {
-      setError('ID siswa tidak ditemukan');
+      setError('ID siswa tidak ditemukan dalam URL');
       setLoading(false);
     }
   }, [studentId]);
@@ -286,14 +304,14 @@ const PredictionForm = () => {
         </div>
       )}
 
-      {/* Debug Info - Remove in production */}
+      {/* Debug Info - Uncomment for development */}
       {/* {process.env.NODE_ENV === 'development' && (
         <div className="mb-6 p-4 bg-gray-100 rounded-md">
           <details>
             <summary className="cursor-pointer text-sm font-medium">🔍 Debug Info (Development Only)</summary>
             <div className="mt-2 space-y-2">
               <div className="text-xs bg-white p-2 rounded border">
-                <strong>Student ID:</strong> {studentId} (type: {typeof studentId})
+                <strong>Student ID (UUID):</strong> {studentId} (valid: {isValidUUID(studentId) ? '✅' : '❌'})
               </div>
               <div className="text-xs bg-white p-2 rounded border">
                 <strong>Student Data:</strong>
