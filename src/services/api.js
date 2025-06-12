@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // 1. Fix the base URL - remove '/api' from the end
-const API_URL = import.meta.env.VITE_API_URL || 'https://backend-kyzutogh-kyzutovcls-projects.vercel.app';
+const API_URL = import.meta.env.VITE_API_URL || 'https://cyan-industrious-fox.glitch.me';
 
 // Create axios instance
 const api = axios.create({
